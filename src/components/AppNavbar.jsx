@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, MessageSquare, User, LogOut, Shield } from 'lucide-react';
+import { Search, Bell, MessageSquare, User, LogOut, Shield, Zap } from 'lucide-react';
+import Logo from './Logo';
 
 const AppNavbar = ({ userProfile }) => {
     const location = useLocation();
@@ -55,8 +56,8 @@ const AppNavbar = ({ userProfile }) => {
     return (
         <nav className="fixed top-0 left-0 w-full z-[100] h-14 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md px-6 flex items-center justify-between">
             {/* Left: Brand */}
-            <Link to="/app" className="text-sm font-bold text-white">
-                GS
+            <Link to="/app">
+                <Logo className="scale-75" />
             </Link>
 
             {/* Center: Navigation */}
@@ -79,6 +80,14 @@ const AppNavbar = ({ userProfile }) => {
                 >
                     Vault
                 </Link>
+
+                <button
+                    onClick={() => alert("Visual Engine: Neural Interface Active")}
+                    className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-full text-[10px] font-bold text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all uppercase tracking-wider group"
+                >
+                    <Zap size={12} className="fill-current group-hover:text-yellow-300 transition-colors" />
+                    Visual Engine
+                </button>
             </div>
 
             {/* Right: Actions */}
