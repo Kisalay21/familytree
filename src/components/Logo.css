@@ -1,0 +1,76 @@
+/* Logo.css */
+.chain-logo-container {
+    position: relative;
+    width: 50px;
+    /* target width */
+    height: 35px;
+    /* target height */
+    /* Removed flex centering to avoid fighting with transform-origin */
+}
+
+.chain-logo-scaled {
+    width: 200px;
+    /* Original size from user code */
+    height: 140px;
+    transform-origin: top left;
+    transform: scale(0.25);
+    /* Ensure it starts at the container's origin */
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Base Link Style */
+.chain-link {
+    position: absolute;
+    width: 80px;
+    height: 120px;
+    border: 18px solid #2EC4B6;
+    /* Teal Bond */
+    border-radius: 40px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Hover Effects */
+.group:hover .chain-link {
+    transform: scale(1.05);
+}
+
+.group:hover .link-1 {
+    transform: rotate(-15deg) scale(1.05);
+}
+
+.group:hover .link-2 {
+    transform: rotate(15deg) scale(1.05);
+}
+
+.group:hover .link-3 {
+    transform: translateX(-50%) scale(0.9);
+}
+
+/* Link Positioning */
+.link-1 {
+    left: 0;
+    top: 10px;
+    transform: rotate(-15deg);
+    border-color: #2EC4B6;
+    /* Teal Bond */
+}
+
+.link-2 {
+    right: 0;
+    top: 10px;
+    transform: rotate(15deg);
+    border-color: #2EC4B6;
+    /* Teal Bond */
+}
+
+.link-3 {
+    left: 50%;
+    transform: translateX(-50%) scale(0.85);
+    top: 0;
+    border-color: #FF6B6B;
+    /* Coral Heart */
+    z-index: 2;
+}

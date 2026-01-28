@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, MessageSquare, User, LogOut, Shield } from 'lucide-react';
+import { Search, Bell, MessageSquare, User, LogOut, Shield, Zap } from 'lucide-react';
 import Logo from './Logo';
 
 const AppNavbar = ({ userProfile }) => {
@@ -60,8 +60,8 @@ const AppNavbar = ({ userProfile }) => {
                 <Logo className="scale-75" />
             </Link>
 
-            {/* Center: Navigation */}
-            <div className="flex items-center gap-6">
+            {/* Center: Navigation (Ideally Centered absolutely) */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8">
                 <Link
                     to="/app"
                     className={`text-xs font-medium transition-colors ${isActive('/app') ? 'text-white border-b-2 border-purple-500 pb-1' : 'text-gray-400 hover:text-white'}`}

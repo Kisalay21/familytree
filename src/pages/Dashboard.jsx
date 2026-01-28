@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Atom, Search, Bell, Sparkles, Users, ChevronRight, Image as ImageIcon, X, Trash2, Bookmark, Flag, Link as LinkIcon, BellOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { processImage } from '../utils/imageProcessor';
+import Logo from '../components/Logo';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -506,7 +507,13 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="container mx-auto px-4 pt-4 pb-10 flex flex-col lg:flex-row gap-8 max-w-7xl">
+        <div className="container mx-auto px-4 pt-4 pb-10 flex flex-col lg:flex-row gap-8 max-w-7xl relative z-10">
+            {/* Background Watermark */}
+            <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+                <div className="opacity-[0.05] scale-[20] transform origin-center">
+                    <Logo />
+                </div>
+            </div>
 
             {/* Left Sidebar - Family Directory */}
             <aside className="w-full lg:w-80 flex-shrink-0 space-y-6">

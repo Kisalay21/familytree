@@ -1,22 +1,20 @@
 import React, { useState, useRef } from 'react';
 import Navbar from '../components/Navbar';
-import Starfield from '../components/Starfield';
+import ParticleBackground from '../components/ParticleBackground';
 import AuthModal from '../components/AuthModal';
 import { motion } from 'framer-motion';
 import { ChevronRight, Heart, Plus, Share2 } from 'lucide-react';
+import Logo from '../components/Logo';
 
-const FeatureCard = ({ title, desc, icon: Icon, delay }) => (
+const FeatureCard = ({ title, desc, delay }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6, delay }}
-        className="bg-white/5 border border-white/10 p-8 rounded-3xl hover:bg-white/[0.08] transition-all group"
+        className="bg-white/5 border border-white/10 p-6 rounded-2xl hover:bg-white/[0.08] transition-all group text-center"
     >
-        <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-            <Icon className="text-purple-400" size={24} />
-        </div>
-        <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
+        <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
         <p className="text-gray-400 text-sm leading-relaxed">{desc}</p>
     </motion.div>
 );
@@ -41,9 +39,9 @@ const LandingPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1, filter: 'blur(20px)' }}
             transition={{ duration: 0.8 }}
-            className="relative min-h-screen font-sans bg-[#050508] text-white"
+            className="relative min-h-screen font-sans text-white"
         >
-            <Starfield />
+            <ParticleBackground />
             <Navbar onOpenAuth={handleOpenAuth} />
 
             {/* Hero Section */}
@@ -55,10 +53,9 @@ const LandingPage = () => {
                         transition={{ duration: 1 }}
                         className="mb-8"
                     >
-                        <div className="w-20 h-20 bg-purple-500 rounded-full mx-auto mb-4" />
-                        <span className="bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-xs font-black tracking-widest text-purple-400 uppercase mt-4 block">
-                            Unbreakable Connections
-                        </span>
+                        <div className="flex justify-center mb-8">
+                            <Logo className="scale-[2.5]" />
+                        </div>
                     </motion.div>
 
                     <motion.h1
@@ -115,19 +112,16 @@ const LandingPage = () => {
                 {/* Features Section */}
                 <section ref={featuresRef} className="max-w-7xl mx-auto px-6 py-32 grid grid-cols-1 md:grid-cols-3 gap-8">
                     <FeatureCard
-                        icon={Heart}
                         title="Lineage Verification"
                         desc="Connect logic ensures you only add verified relatives. Build a tree that is genetically accurate and secure."
                         delay={0.1}
                     />
                     <FeatureCard
-                        icon={Plus}
                         title="3rd Cousin Precision"
                         desc="Our dimension calculates connections up to the 3rd cousin, bringing family you've never met back into the circle."
                         delay={0.2}
                     />
                     <FeatureCard
-                        icon={Share2}
                         title="Digital Vaults"
                         desc="Seal family secrets, recipes, and memories in private vaults that only your direct bloodline can ever access."
                         delay={0.3}

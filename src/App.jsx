@@ -6,7 +6,7 @@ import Profile from './pages/Profile';
 import FamilyTree from './pages/FamilyTree';
 import Chat from './pages/Chat';
 import Layout from './components/Layout';
-import Starfield from './components/Starfield';
+import ParticleBackground from './components/ParticleBackground';
 
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
@@ -29,7 +29,7 @@ const AnimatedRoutes = () => {
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/zen" element={<Starfield />} />
+                <Route path="/zen" element={<ParticleBackground />} />
                 <Route
                     path="/app"
                     element={

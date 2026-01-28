@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Starfield from './Starfield';
+import ParticleBackground from './ParticleBackground';
 import AppNavbar from './AppNavbar';
 import { motion } from 'framer-motion';
 
@@ -7,20 +7,30 @@ const Layout = ({ children }) => {
     const [userProfile, setUserProfile] = useState(null);
 
     useEffect(() => {
-        const saved = localStorage.getItem('userProfile');
-        if (saved) setUserProfile(JSON.parse(saved));
+        const safeParse = (key) => {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : null;
+            } catch (e) {
+                console.error(`Error parsing ${key} from localStorage:`, e);
+                return null;
+            }
+        };
+
+        const saved = safeParse('userProfile');
+        if (saved) setUserProfile(saved);
 
         const handleStorage = () => {
-            const updated = localStorage.getItem('userProfile');
-            if (updated) setUserProfile(JSON.parse(updated));
+            const updated = safeParse('userProfile');
+            if (updated) setUserProfile(updated);
         };
         window.addEventListener('storage', handleStorage);
         return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
     return (
-        <div className="relative min-h-screen font-sans text-white overflow-hidden bg-[#050505]">
-            <Starfield />
+        <div className="relative min-h-screen font-sans text-white overflow-hidden">
+            <ParticleBackground />
             <AppNavbar userProfile={userProfile} />
             <motion.div
                 initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}

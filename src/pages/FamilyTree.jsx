@@ -1,9 +1,43 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { User, Plus, Heart, Share2, Info, ZoomIn, ZoomOut } from 'lucide-react';
 
-const FamilyNode = ({ member, x, y, delay, isRoot, onSelect, isActive, isPaternal, isMaternal }) => {
+const FamilyNode = ({ member, x, y, parentX, parentY, delay, isRoot, onSelect, isActive, isPaternal, isMaternal }) => {
+    // Calculate relative position of parent from this node
+    const relX = (parentX || 0) - x;
+    const relY = (parentY || 0) - y;
+
+    // Calculate gap (radius of node + buffer)
+    // Node is w-16/w-20 (approx 4rem = 64px, radius 32px). Let's say 40px gap.
+    const angle = Math.atan2(relY, relX);
+    const gap = 45; // radius + spacing
+
+    // Line start (at parent, offset by gap)
+    const x1 = relX - Math.cos(angle) * gap;
+    const y1 = relY - Math.sin(angle) * gap;
+
+    // Line end (at child, offset by gap) (Child is at 0,0 locally)
+    const x2 = Math.cos(angle) * gap; // Actually strictly speaking, we want to stop at the child's edge.
+    // Since Vector points Parent -> Child (in relative terms Parent is relX, Child is 0)
+    // Wait, relX/Y is vector FROM Child TO Parent.
+    // So 0,0 is Child. relX,relY is Parent.
+
+    // We want line from ParentEdge to ChildEdge.
+    // Vector Child->Parent is (relX, relY).
+    // Start Point (at Parent Edge): ParentPos - (Gap * normalizedVector)
+    // ParentPos is (relX, relY).
+    // dx/dy is component of Gap towards Child. -cos(angle)*gap, -sin(angle)*gap.
+    const startX = relX - Math.cos(angle) * gap;
+    const startY = relY - Math.sin(angle) * gap;
+
+    // End Point (at Child Edge): ChildPos + (Gap * normalizedVector)
+    // ChildPos is (0,0).
+    // Direction Child->Parent is angle.
+    const endX = Math.cos(angle) * gap;
+    const endY = Math.sin(angle) * gap;
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -31,10 +65,10 @@ const FamilyNode = ({ member, x, y, delay, isRoot, onSelect, isActive, isPaterna
                             opacity: isActive ? 1 : 0.5
                         }}
                         transition={{ duration: 1, delay: delay + 0.5 }}
-                        x1={-x}
-                        y1={-y}
-                        x2="0"
-                        y2="0"
+                        x1={startX}
+                        y1={startY}
+                        x2={endX}
+                        y2={endY}
                         strokeDasharray={isActive ? "none" : "5,5"}
                     />
                     {/* Pulsing highlight for active path */}
@@ -42,10 +76,10 @@ const FamilyNode = ({ member, x, y, delay, isRoot, onSelect, isActive, isPaterna
                         <motion.line
                             animate={{ opacity: [0.2, 0.8, 0.2] }}
                             transition={{ duration: 2, repeat: Infinity }}
-                            x1={-x}
-                            y1={-y}
-                            x2="0"
-                            y2="0"
+                            x1={startX}
+                            y1={startY}
+                            x2={endX}
+                            y2={endY}
                             stroke={isPaternal ? '#a855f7' : '#06b6d4'}
                             strokeWidth="8"
                             strokeLinecap="round"
@@ -357,20 +391,25 @@ const FamilyTree = () => {
                     </svg>
 
                     {/* Family Nodes */}
-                    {familyData.map((member, index) => (
-                        <FamilyNode
-                            key={member.id}
-                            member={member}
-                            x={member.x}
-                            y={member.y}
-                            isRoot={member.isRoot}
-                            delay={index * 0.1}
-                            onSelect={setSelectedMember}
-                            isActive={selectedMember?.id === member.id}
-                            isPaternal={member.isPaternal}
-                            isMaternal={member.isMaternal}
-                        />
-                    ))}
+                    {familyData.map((member, index) => {
+                        const parent = familyData.find(p => p.id === member.parentId);
+                        return (
+                            <FamilyNode
+                                key={member.id}
+                                member={member}
+                                x={member.x}
+                                y={member.y}
+                                parentX={parent?.x || 0}
+                                parentY={parent?.y || 0}
+                                isRoot={member.isRoot}
+                                delay={index * 0.1}
+                                onSelect={setSelectedMember}
+                                isActive={selectedMember?.id === member.id}
+                                isPaternal={member.isPaternal}
+                                isMaternal={member.isMaternal}
+                            />
+                        );
+                    })}
 
                     {/* Central Focus Effect */}
                     <div className="absolute w-32 h-32 border border-purple-500/10 rounded-full animate-ping pointer-events-none" />
@@ -400,104 +439,110 @@ const FamilyTree = () => {
                 </svg>
             )}
 
-            {/* Zoom Controls */}
-            <div className="fixed bottom-6 left-6 z-40 bg-[#0a0a0c]/90 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-3 shadow-xl">
-                <button
-                    onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}
-                    className="text-gray-400 hover:text-white transition-colors"
-                >
-                    <ZoomOut size={18} />
-                </button>
-                <input
-                    type="range"
-                    min="0.4"
-                    max="1.5"
-                    step="0.1"
-                    value={zoom}
-                    onChange={(e) => setZoom(parseFloat(e.target.value))}
-                    className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
-                />
-                <button
-                    onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}
-                    className="text-gray-400 hover:text-white transition-colors"
-                >
-                    <ZoomIn size={18} />
-                </button>
-                <span className="text-[10px] w-8 text-center text-gray-500 font-mono">{Math.round(zoom * 100)}%</span>
-            </div>
-
-
-
-            {/* Member Details Panel (Fixed Sidebar or Overlay) */}
-            <AnimatePresence>
-                {selectedMember && (
-                    <motion.div
-                        initial={{ opacity: 0, x: 100 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 100 }}
-                        className="fixed right-6 top-24 bottom-24 w-80 bg-[#0a0a0c]/90 backdrop-blur-2xl border border-white/10 rounded-3xl z-30 shadow-2xl p-6 overflow-y-auto"
+            {/* Zoom Controls (Portaled to stay fixed) */}
+            {createPortal(
+                <div className="fixed bottom-6 left-6 z-[100] bg-[#0a0a0c]/90 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-3 shadow-xl">
+                    <button
+                        onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}
+                        className="text-gray-400 hover:text-white transition-colors"
                     >
-                        <button
-                            onClick={() => setSelectedMember(null)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+                        <ZoomOut size={18} />
+                    </button>
+                    <input
+                        type="range"
+                        min="0.4"
+                        max="1.5"
+                        step="0.1"
+                        value={zoom}
+                        onChange={(e) => setZoom(parseFloat(e.target.value))}
+                        className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
+                    />
+                    <button
+                        onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}
+                        className="text-gray-400 hover:text-white transition-colors"
+                    >
+                        <ZoomIn size={18} />
+                    </button>
+                    <span className="text-[10px] w-8 text-center text-gray-500 font-mono">{Math.round(zoom * 100)}%</span>
+                </div>,
+                document.body
+            )}
+
+
+
+            {/* Member Details Panel (Portaled for fixed access) */}
+            {createPortal(
+                <AnimatePresence>
+                    {selectedMember && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 100 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 100 }}
+                            className="fixed right-6 top-24 bottom-24 w-80 bg-[#0a0a0c]/90 backdrop-blur-2xl border border-white/10 rounded-3xl z-[100] shadow-2xl p-6 overflow-y-auto"
                         >
-                            <Plus className="rotate-45" size={24} />
-                        </button>
+                            <button
+                                onClick={() => setSelectedMember(null)}
+                                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+                            >
+                                <Plus className="rotate-45" size={24} />
+                            </button>
 
-                        <div className="flex flex-col items-center text-center mt-4">
-                            <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-lg shadow-purple-500/20 mb-4">
-                                <img
-                                    src={selectedMember.image || `https://images.unsplash.com/photo-${1500000000000 + selectedMember.id}?auto=format&fit=crop&w=200&q=80`}
-                                    alt={selectedMember.name}
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            <h2 className="text-xl font-bold text-white">{selectedMember.name === "YOU" ? selectedMember.fullName : selectedMember.name}</h2>
-                            <p className="text-purple-400 text-sm font-medium">{selectedMember.name === "YOU" ? "Your Profile" : selectedMember.relation}</p>
+                            <div className="flex flex-col items-center text-center mt-4">
+                                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-lg shadow-purple-500/20 mb-4">
+                                    <img
+                                        src={selectedMember.image || `https://images.unsplash.com/photo-${1500000000000 + selectedMember.id}?auto=format&fit=crop&w=200&q=80`}
+                                        alt={selectedMember.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <h2 className="text-xl font-bold text-white">{selectedMember.name === "YOU" ? selectedMember.fullName : selectedMember.name}</h2>
+                                <p className="text-purple-400 text-sm font-medium">{selectedMember.name === "YOU" ? "Your Profile" : selectedMember.relation}</p>
 
-                            <div className="grid grid-cols-2 gap-3 w-full mt-8">
-                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Posts</div>
-                                    <div className="text-white font-bold text-lg">
-                                        {selectedMember.id === 'root' ? stats.posts : Math.floor(stats.posts * 0.8) + (selectedMember.id.length % 5)}
+                                <div className="grid grid-cols-2 gap-3 w-full mt-8">
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Posts</div>
+                                        <div className="text-white font-bold text-lg">
+                                            {selectedMember.id === 'root' ? stats.posts : Math.floor(stats.posts * 0.8) + (selectedMember.id.length % 5)}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Vaults</div>
+                                        <div className="text-white font-bold text-lg">
+                                            {selectedMember.id === 'root' ? stats.vaults : Math.floor(stats.vaults * 0.5) + (selectedMember.id.length % 3)}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Vaults</div>
-                                    <div className="text-white font-bold text-lg">
-                                        {selectedMember.id === 'root' ? stats.vaults : Math.floor(stats.vaults * 0.5) + (selectedMember.id.length % 3)}
+
+                                <div className="w-full mt-8 space-y-3">
+                                    <button
+                                        onClick={() => navigate('/profile')}
+                                        className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        <User size={16} /> VIEW PROFILE
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/profile')}
+                                        className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20"
+                                    >
+                                        <Heart size={16} /> SHARED MEMORIES
+                                    </button>
+                                </div>
+
+                                <div className="mt-8 p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl w-full text-left">
+                                    <div className="flex items-center gap-2 text-purple-400 mb-2">
+                                        <Info size={14} />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">About</span>
                                     </div>
+                                    <p className="text-xs text-gray-400 leading-relaxed italic">
+                                        "{selectedMember.name === "YOU" ? (userProfile.bio || "No bio available.") : `Always cherished the summer trips to the lake house. A pillar of the ${selectedMember.name.split(' ').pop()} family.`}"
+                                    </p>
                                 </div>
                             </div>
-
-                            <div className="w-full mt-8 space-y-3">
-                                <button
-                                    onClick={() => navigate('/profile')}
-                                    className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                                >
-                                    <User size={16} /> VIEW PROFILE
-                                </button>
-                                <button
-                                    onClick={() => navigate('/profile')}
-                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20"
-                                >
-                                    <Heart size={16} /> SHARED MEMORIES
-                                </button>
-                            </div>
-
-                            <div className="mt-8 p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl w-full text-left">
-                                <div className="flex items-center gap-2 text-purple-400 mb-2">
-                                    <Info size={14} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">About</span>
-                                </div>
-                                <p className="text-xs text-gray-400 leading-relaxed italic">
-                                    "{selectedMember.name === "YOU" ? (userProfile.bio || "No bio available.") : `Always cherished the summer trips to the lake house. A pillar of the ${selectedMember.name.split(' ').pop()} family.`}"
-                                </p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };
