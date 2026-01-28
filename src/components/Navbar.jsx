@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Zap } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Logo from './Logo';
 
 const Navbar = ({ onOpenAuth }) => {
@@ -14,13 +14,6 @@ const Navbar = ({ onOpenAuth }) => {
                 <a href="#" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">Lineage</a>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">Memories</a>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">Privacy</a>
-                <button
-                    onClick={() => alert("Visual Engine: Neural Interface Active")}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all uppercase tracking-wider group"
-                >
-                    <Zap size={12} className="fill-current group-hover:text-yellow-300 transition-colors" />
-                    Visual Engine
-                </button>
             </div>
 
             <div className="flex items-center gap-4">
