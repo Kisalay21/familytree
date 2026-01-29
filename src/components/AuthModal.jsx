@@ -68,7 +68,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
                     dob: formData.dob,
                     work: formData.work,
                     location: formData.location,
-                    photoURL: user.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+                    photoURL: user.photoURL || null,
                     heritage: {
                         father: formData.father,
                         mother: formData.mother,
@@ -86,8 +86,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
                         }
                     },
                     immediateFamily: [
-                        { name: formData.father, relation: "Pita Ji (Father)", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80" },
-                        { name: formData.mother, relation: "Mata Ji (Mother)", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" }
+                        { name: formData.father, relation: "Pita Ji (Father)", img: null },
+                        { name: formData.mother, relation: "Mata Ji (Mother)", img: null }
                     ]
                 };
 

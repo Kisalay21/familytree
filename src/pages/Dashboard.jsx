@@ -19,7 +19,7 @@ const Dashboard = () => {
         const saved = localStorage.getItem('userProfile');
         let profile = safeJSON(saved, {
             displayName: "John Doe",
-            photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"
+            photoURL: null
         });
 
         // Data Migration: Ensure Family Members have DOBs
@@ -49,7 +49,7 @@ const Dashboard = () => {
     });
 
     const displayName = userProfile?.displayName || "Member";
-    const photoURL = userProfile?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
+    const photoURL = userProfile?.photoURL || null;
 
     // Dynamic Family Directory from User Profile
     const familyDirectory = [
@@ -453,8 +453,12 @@ const Dashboard = () => {
                     className="glass-panel p-4 rounded-2xl border border-white/10 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors group"
                 >
                     <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px]">
-                            <img src={photoURL} alt="User" className="w-full h-full rounded-full object-cover border border-black" />
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px] overflow-hidden flex items-center justify-center">
+                            {photoURL ? (
+                                <img src={photoURL} alt="User" className="w-full h-full rounded-full object-cover border border-black" />
+                            ) : (
+                                <span className="font-bold text-white text-lg">{displayName.charAt(0)}</span>
+                            )}
                         </div>
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-black"></div>
                     </div>
@@ -519,8 +523,12 @@ const Dashboard = () => {
                 {/* Post Creator */}
                 <div className="glass-panel rounded-2xl p-4 mb-8 border border-white/10">
                     <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 overflow-hidden">
-                            <img src={photoURL} alt="Me" className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 overflow-hidden flex items-center justify-center font-bold text-white">
+                            {photoURL ? (
+                                <img src={photoURL} alt="Me" className="w-full h-full object-cover" />
+                            ) : (
+                                displayName.charAt(0)
+                            )}
                         </div>
                         <div className="flex-1">
                             <input
