@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { auth, db } from '../firebase';
+import { auth, db, isLocal } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -47,6 +47,26 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
         setLoading(true);
 
         try {
+            if (isLocal && mode === 'login') {
+                console.log("Localhost: Bypassing Firebase Auth");
+                const profileData = {
+                    displayName: "Local Dev",
+                    email: formData.email || "dev@local.com",
+                    photoURL: null
+                };
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('userProfile', JSON.stringify(profileData));
+                setLoading(false);
+                setLoading(false);
+                onClose();
+                // Preserve URL params (for invite logic)
+                navigate({
+                    pathname: '/app',
+                    search: window.location.search
+                });
+                return;
+            }
+
             let user;
             let profileData;
 
@@ -119,7 +139,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('userProfile', JSON.stringify(profileData));
 
-            navigate('/app');
+            navigate({
+                pathname: '/app',
+                search: window.location.search
+            });
 
         } catch (err) {
             console.error("Auth Error:", err);

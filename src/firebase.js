@@ -4,6 +4,9 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+// Helper to check if we are running locally to avoid login fatigue
+export const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
 // TODO: Replace the following with your app's Firebase project configuration
 // You can find this in the Firebase Console -> Project Settings -> General -> Your Apps -> Config
 const firebaseConfig = {

@@ -3,8 +3,9 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, Atom, Search, Bell, Spark
 import { useNavigate } from 'react-router-dom';
 import { processImage } from '../utils/imageProcessor';
 import Logo from '../components/Logo';
-import { db } from '../firebase';
+import { db, isLocal } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import RelationshipSelector from '../components/RelationshipSelector';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -105,27 +106,71 @@ const Dashboard = () => {
     // Calculate this outside render or memoize it
     const nextBirthday = React.useMemo(() => getUpcomingBirthday(), [userProfile.immediateFamily]);
 
+    // Relationship Invite Logic
+    const [showRelationSelector, setShowRelationSelector] = useState(false);
+    const [inviterName, setInviterName] = useState('');
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const inviteFrom = params.get('inviteFrom');
+        if (inviteFrom) {
+            setInviterName(inviteFrom);
+            setShowRelationSelector(true);
+            // Clear params to prevent persistent modal on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
+
+    const handleRelationshipConfirm = (relation) => {
+        // Add Inviter to Current User's Family
+        const newMember = {
+            name: inviterName,
+            relation: relation, // e.g., "Father" (Inviter is Father of User)
+            img: null // Or fetch if we had their ID
+        };
+
+        const updatedFamily = [...(userProfile.immediateFamily || []), newMember];
+        const updatedProfile = { ...userProfile, immediateFamily: updatedFamily };
+
+        setUserProfile(updatedProfile);
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+
+        setShowRelationSelector(false);
+        alert(`You are now connected to ${inviterName} as their ${relation}!`);
+    };
+
     // State for Feed Posts (Firestore Realtime)
     const [posts, setPosts] = useState([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
 
     useEffect(() => {
-        // Subscribe to posts collection
-        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedPosts = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setPosts(fetchedPosts);
+        if (isLocal) {
+            // Local Mode: Read from LocalStorage
+            try {
+                const savedPosts = localStorage.getItem('feedPosts');
+                const parsed = savedPosts ? JSON.parse(savedPosts) : [];
+                setPosts(parsed);
+            } catch (e) {
+                console.error("Local load failed", e);
+            }
             setLoadingPosts(false);
-        }, (error) => {
-            console.error("Error fetching posts:", error);
-            setPostError("Failed to load live feed.");
-            setLoadingPosts(false);
-        });
-
-        return () => unsubscribe();
+        } else {
+            // Production Mode: Firestore Realtime
+            const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const fetchedPosts = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setPosts(fetchedPosts);
+                setLoadingPosts(false);
+            }, (error) => {
+                console.error("Error fetching posts:", error);
+                setPostError("Failed to load live feed.");
+                setLoadingPosts(false);
+            });
+            return () => unsubscribe();
+        }
     }, []);
 
     // State for Recent Activity (Persistent)
@@ -313,7 +358,16 @@ const Dashboard = () => {
                 isLiked: false
             };
 
-            await addDoc(collection(db, "posts"), newPost);
+            if (isLocal) {
+                // Local Mode: Save to LocalStorage
+                const newLocalPost = { ...newPost, id: Date.now().toString() };
+                const updatedPosts = [newLocalPost, ...posts];
+                localStorage.setItem('feedPosts', JSON.stringify(updatedPosts));
+                setPosts(updatedPosts);
+            } else {
+                // Production Mode: Write to Firestore
+                await addDoc(collection(db, "posts"), newPost);
+            }
 
             // Reset UI
             setNewPostContent('');
@@ -339,12 +393,17 @@ const Dashboard = () => {
 
     const handleDeletePost = async (postId) => {
         if (window.confirm("Are you sure you want to delete this post from your feed?")) {
-            try {
-                await deleteDoc(doc(db, "posts", postId));
-                // No need to setPosts, the onSnapshot listener will handle it
-            } catch (error) {
-                console.error("Error deleting post:", error);
-                alert("Failed to delete post.");
+            if (isLocal) {
+                const updatedPosts = posts.filter(p => p.id !== postId);
+                setPosts(updatedPosts);
+                localStorage.setItem('feedPosts', JSON.stringify(updatedPosts));
+            } else {
+                try {
+                    await deleteDoc(doc(db, "posts", postId));
+                } catch (error) {
+                    console.error("Error deleting post:", error);
+                    alert("Failed to delete post.");
+                }
             }
         }
     };
@@ -813,6 +872,14 @@ const Dashboard = () => {
                     )}
                 </div>
             </aside>
+
+            {/* Relationship Selector Modal */}
+            <RelationshipSelector
+                isOpen={showRelationSelector}
+                inviterName={inviterName}
+                onSelect={handleRelationshipConfirm}
+                onClose={() => setShowRelationSelector(false)}
+            />
         </div>
     );
 };

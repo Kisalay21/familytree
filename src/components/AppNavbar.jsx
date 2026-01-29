@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, MessageSquare, User, LogOut, Shield, Zap } from 'lucide-react';
+import { Search, Bell, MessageSquare, User, LogOut, Shield, Zap, Share2 } from 'lucide-react';
 import Logo from './Logo';
 
 const AppNavbar = ({ userProfile }) => {
@@ -11,6 +11,19 @@ const AppNavbar = ({ userProfile }) => {
     const [notifications, setNotifications] = React.useState([]);
     const [unreadCount, setUnreadCount] = React.useState(0);
     const [showAll, setShowAll] = React.useState(false);
+    const navigate = React.useMemo(() => (to) => window.location.href = to, []); // Hack since useNavigate isn't safe here if not in provider, but typically it is.
+    // Better: use window.location or assume parent handles navigation if it was props, but here we use Link. 
+    // Wait, useNavigate is hook.
+
+    const handleInvite = () => {
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        const name = userProfile.displayName || 'Friend';
+        const inviteLink = `${window.location.origin}/?inviteFrom=${encodeURIComponent(name)}`;
+
+        navigator.clipboard.writeText(inviteLink);
+        alert("Invite Link Copied! Send this to your family member.\n\nLink: " + inviteLink);
+        setIsProfileMenuOpen(false);
+    };
 
     // Initial Load & Event Listener for Updates
     React.useEffect(() => {
@@ -208,6 +221,16 @@ const AppNavbar = ({ userProfile }) => {
                                     Security & Privacy
                                 </button>
 
+
+
+                                <button
+                                    onClick={handleInvite}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors text-left"
+                                >
+                                    <Share2 size={16} className="text-purple-400" />
+                                    Invite Family
+                                </button>
+
                                 <div className="my-1 border-t border-white/10"></div>
 
                                 <Link
@@ -226,7 +249,7 @@ const AppNavbar = ({ userProfile }) => {
                     )}
                 </div>
             </div>
-        </nav>
+        </nav >
     );
 };
 
