@@ -3,7 +3,7 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, Atom, Search, Bell, Spark
 import { useNavigate } from 'react-router-dom';
 import { processImage } from '../utils/imageProcessor';
 import Logo from '../components/Logo';
-import { db, isLocal } from '../firebase';
+import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import RelationshipSelector from '../components/RelationshipSelector';
 
@@ -144,33 +144,21 @@ const Dashboard = () => {
     const [loadingPosts, setLoadingPosts] = useState(true);
 
     useEffect(() => {
-        if (isLocal) {
-            // Local Mode: Read from LocalStorage
-            try {
-                const savedPosts = localStorage.getItem('feedPosts');
-                const parsed = savedPosts ? JSON.parse(savedPosts) : [];
-                setPosts(parsed);
-            } catch (e) {
-                console.error("Local load failed", e);
-            }
+        // Production Mode: Firestore Realtime
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedPosts = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setPosts(fetchedPosts);
             setLoadingPosts(false);
-        } else {
-            // Production Mode: Firestore Realtime
-            const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                const fetchedPosts = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setPosts(fetchedPosts);
-                setLoadingPosts(false);
-            }, (error) => {
-                console.error("Error fetching posts:", error);
-                setPostError("Failed to load live feed.");
-                setLoadingPosts(false);
-            });
-            return () => unsubscribe();
-        }
+        }, (error) => {
+            console.error("Error fetching posts:", error);
+            setPostError("Failed to load live feed.");
+            setLoadingPosts(false);
+        });
+        return () => unsubscribe();
     }, []);
 
     // State for Recent Activity (Persistent)
@@ -358,16 +346,8 @@ const Dashboard = () => {
                 isLiked: false
             };
 
-            if (isLocal) {
-                // Local Mode: Save to LocalStorage
-                const newLocalPost = { ...newPost, id: Date.now().toString() };
-                const updatedPosts = [newLocalPost, ...posts];
-                localStorage.setItem('feedPosts', JSON.stringify(updatedPosts));
-                setPosts(updatedPosts);
-            } else {
-                // Production Mode: Write to Firestore
-                await addDoc(collection(db, "posts"), newPost);
-            }
+            // Production Mode: Write to Firestore
+            await addDoc(collection(db, "posts"), newPost);
 
             // Reset UI
             setNewPostContent('');
@@ -393,17 +373,11 @@ const Dashboard = () => {
 
     const handleDeletePost = async (postId) => {
         if (window.confirm("Are you sure you want to delete this post from your feed?")) {
-            if (isLocal) {
-                const updatedPosts = posts.filter(p => p.id !== postId);
-                setPosts(updatedPosts);
-                localStorage.setItem('feedPosts', JSON.stringify(updatedPosts));
-            } else {
-                try {
-                    await deleteDoc(doc(db, "posts", postId));
-                } catch (error) {
-                    console.error("Error deleting post:", error);
-                    alert("Failed to delete post.");
-                }
+            try {
+                await deleteDoc(doc(db, "posts", postId));
+            } catch (error) {
+                console.error("Error deleting post:", error);
+                alert("Failed to delete post.");
             }
         }
     };
@@ -413,7 +387,6 @@ const Dashboard = () => {
         const targetPost = posts.find(p => p.id === postId);
         if (!targetPost) return;
 
-        // Simple toggle for MVP (Warning: Shared state in real app)
         const willLike = !targetPost.isLiked;
         const newLikes = (targetPost.likes || 0) + (willLike ? 1 : -1);
 
