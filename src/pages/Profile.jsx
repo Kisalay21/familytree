@@ -25,21 +25,16 @@ const Profile = ({ defaultTab }) => {
     const [userDocData, setUserDocData] = useState(() => {
         const saved = localStorage.getItem('userProfile');
         const defaultData = {
-            displayName: "Katie Mc",
-            location: "Mumbai, India",
-            bio: "A happy Place in a happy space on the digital database. 🌌",
-            work: "Software Architect",
-            dob: "1995-08-15",
-            gender: "Female",
-            role: "PRO MEMBER",
-            photoURL: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
+            displayName: "Guest User",
+            location: "",
+            bio: "Welcome to your profile.",
+            work: "",
+            dob: "",
+            gender: "",
+            role: "Member",
+            photoURL: null,
             coverPhoto: null,
-            immediateFamily: [
-                { name: "Some", relation: "Pita Ji (Father)", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80" },
-                { name: "one", relation: "Mata Ji (Mother)", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" },
-                { name: "Neha Kumar", relation: "Didi (Sister)", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80" },
-                { name: "Arjun Kumar", relation: "Bhai (Brother)", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" },
-            ]
+            immediateFamily: []
         };
 
         let activeProfile = defaultData;
@@ -91,24 +86,10 @@ const Profile = ({ defaultTab }) => {
                 {
                     id: '1',
                     name: 'General Memories',
-                    media: [
-                        {
-                            id: 1,
-                            type: 'image',
-                            src: "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80",
-                            likes: 5,
-                            comments: [
-                                { id: 999, text: "LoLo", author: "Katie Mc", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80" }
-                            ]
-                        },
-                        { id: 2, type: 'image', src: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80", likes: 0, comments: [] }
-                    ]
+                    media: []
                 }
             ],
-            tagged: [
-                { id: 101, src: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80", taggedBy: "Pita Ji", timestamp: "2 days ago", type: 'image', likes: 0, comments: [] },
-                { id: 102, src: "https://images.unsplash.com/photo-1519671482538-518b5c2c681c?auto=format&fit=crop&w=600&q=80", taggedBy: "Mata Ji", timestamp: "1 week ago", type: 'image', likes: 0, comments: [] }
-            ]
+            tagged: []
         };
 
         return { ...defaultData, ...safeJSON(saved, {}) };
@@ -407,7 +388,7 @@ const Profile = ({ defaultTab }) => {
         });
     };
 
-    const displayAvatar = userDocData.photoURL || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80";
+    const displayAvatar = userDocData.photoURL || null;
 
     return (
         <div className="min-h-screen pb-20 text-white overflow-x-hidden pt-10">
@@ -581,8 +562,12 @@ const Profile = ({ defaultTab }) => {
                             <input type="file" ref={avatarInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
                             <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1px] h-32 bg-gradient-to-b from-transparent via-cyan-400/50 to-purple-500 z-0"></div>
                             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-cyan-400 to-amber-500 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity animate-pulse"></div>
-                            <div className="w-44 h-44 rounded-full p-1.5 bg-gradient-to-tr from-purple-600 to-cyan-500 relative z-10 shadow-2xl">
-                                <img src={displayAvatar} alt="Profile" className={`w-full h-full rounded-full object-cover border-4 border-[#050505] transition-opacity ${isUploadingAvatar ? 'opacity-50' : 'opacity-100'}`} />
+                            <div className="w-44 h-44 rounded-full p-1.5 bg-gradient-to-tr from-purple-600 to-cyan-500 relative z-10 shadow-2xl overflow-hidden flex items-center justify-center bg-black">
+                                {displayAvatar ? (
+                                    <img src={displayAvatar} alt="Profile" className={`w-full h-full rounded-full object-cover border-4 border-[#050505] transition-opacity ${isUploadingAvatar ? 'opacity-50' : 'opacity-100'}`} />
+                                ) : (
+                                    <span className="text-5xl font-bold text-white uppercase">{userDocData.displayName?.charAt(0) || "U"}</span>
+                                )}
                                 <div className="absolute bottom-2 right-2 w-8 h-8 bg-green-500 border-4 border-[#050505] rounded-full z-20"></div>
                                 {isUploadingAvatar && (
                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-full z-30">
@@ -641,8 +626,12 @@ const Profile = ({ defaultTab }) => {
                             <div className="space-y-4">
                                 {userDocData.immediateFamily?.map((member, idx) => (
                                     <div key={idx} className="flex items-center gap-4 group cursor-pointer hover:bg-white/5 p-2.5 -mx-2 rounded-2xl transition-all border border-transparent hover:border-white/5">
-                                        <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400/50 via-purple-400/50 to-amber-400/50 group-hover:from-cyan-400">
-                                            <img src={member.img} alt={member.name} className="w-full h-full rounded-full object-cover border-2 border-[#0a0a0c]" />
+                                        <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400/50 via-purple-400/50 to-amber-400/50 group-hover:from-cyan-400 overflow-hidden flex items-center justify-center bg-black">
+                                            {member.img ? (
+                                                <img src={member.img} alt={member.name} className="w-full h-full rounded-full object-cover border-2 border-[#0a0a0c]" />
+                                            ) : (
+                                                <span className="text-lg font-bold text-white">{member.name?.charAt(0) || "?"}</span>
+                                            )}
                                         </div>
                                         <div>
                                             <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">{member.name}</h3>

@@ -166,12 +166,16 @@ const AppNavbar = ({ userProfile }) => {
                         onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                         className="flex items-center gap-2 group focus:outline-none"
                     >
-                        <div className={`w-6 h-6 rounded-full border border-white/10 overflow-hidden transition-all ${isProfileMenuOpen ? 'border-purple-500 ring-2 ring-purple-500/20' : 'group-hover:border-purple-500'}`}>
-                            <img
-                                src={userProfile?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
-                                alt="Avatar"
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-6 h-6 rounded-full border border-white/10 overflow-hidden transition-all flex items-center justify-center bg-gray-800">
+                            {userProfile?.photoURL ? (
+                                <img
+                                    src={userProfile.photoURL}
+                                    alt="Avatar"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-[10px] font-bold text-white">{userProfile?.displayName?.charAt(0) || "U"}</span>
+                            )}
                         </div>
                     </button>
 
