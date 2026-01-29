@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { auth, db } from '../firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
     const [mode, setMode] = React.useState(initialMode);
@@ -35,38 +38,95 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleMockLogin = (e) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handleAuthSubmit = async (e) => {
         e.preventDefault();
-        // Simulate login/signup and save profile
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userProfile', JSON.stringify({
-            displayName: formData.name || 'Demo User',
-            email: formData.email || 'demo@example.com',
-            dob: formData.dob,
-            work: formData.work,
-            location: formData.location,
-            heritage: {
-                father: formData.father,
-                mother: formData.mother,
-                paternal: {
-                    grandfather: formData.patGF,
-                    grandmother: formData.patGM,
-                    greatGrandfather: formData.patGGF,
-                    greatGrandmother: formData.patGGM
-                },
-                maternal: {
-                    grandfather: formData.matGF,
-                    grandmother: formData.matGM,
-                    greatGrandfather: formData.matGGF,
-                    greatGrandmother: formData.matGGM
+        setError(null);
+        setLoading(true);
+
+        try {
+            let user;
+            let profileData;
+
+            if (mode === 'signup') {
+                // 1. Create User in Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+                user = userCredential.user;
+
+                // 2. Update Display Name
+                await updateProfile(user, {
+                    displayName: formData.name
+                });
+
+                // 3. Prepare Profile Data for Firestore
+                profileData = {
+                    uid: user.uid,
+                    displayName: formData.name,
+                    email: formData.email,
+                    dob: formData.dob,
+                    work: formData.work,
+                    location: formData.location,
+                    photoURL: user.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+                    heritage: {
+                        father: formData.father,
+                        mother: formData.mother,
+                        paternal: {
+                            grandfather: formData.patGF,
+                            grandmother: formData.patGM,
+                            greatGrandfather: formData.patGGF,
+                            greatGrandmother: formData.patGGM
+                        },
+                        maternal: {
+                            grandfather: formData.matGF,
+                            grandmother: formData.matGM,
+                            greatGrandfather: formData.matGGF,
+                            greatGrandmother: formData.matGGM
+                        }
+                    },
+                    immediateFamily: [
+                        { name: formData.father, relation: "Pita Ji (Father)", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80" },
+                        { name: formData.mother, relation: "Mata Ji (Mother)", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" }
+                    ]
+                };
+
+                // 4. Save to Firestore
+                await setDoc(doc(db, "users", user.uid), profileData);
+
+            } else {
+                // Login Mode
+                const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+                user = userCredential.user;
+
+                // Fetch Profile from Firestore
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    profileData = docSnap.data();
+                } else {
+                    // Fallback if no profile exists (legacy users or error)
+                    profileData = {
+                        displayName: user.displayName || 'User',
+                        email: user.email,
+                        photoURL: user.photoURL
+                    };
                 }
-            },
-            immediateFamily: [
-                { name: formData.father, relation: "Pita Ji (Father)", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80" },
-                { name: formData.mother, relation: "Mata Ji (Mother)", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" }
-            ]
-        }));
-        navigate('/app');
+            }
+
+            // Persistence for legacy components (Dashboard still uses localStorage for now)
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userProfile', JSON.stringify(profileData));
+
+            navigate('/app');
+
+        } catch (err) {
+            console.error("Auth Error:", err);
+            setError(err.message.replace('Firebase:', '').trim());
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -106,9 +166,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
                                     ? 'Authentication Required'
                                     : 'Establish your genetic anchor'}
                             </p>
+                            {error && (
+                                <p className="mt-4 text-red-500 text-xs font-bold bg-red-500/10 p-2 rounded border border-red-500/20">
+                                    {error}
+                                </p>
+                            )}
                         </div>
 
-                        <form onSubmit={handleMockLogin} className="space-y-8">
+                        <form onSubmit={handleAuthSubmit} className="space-y-8">
                             {mode === 'signup' ? (
                                 <>
                                     {/* Personal Info */}
@@ -278,9 +343,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'signup' }) => {
 
                             <button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/20 text-sm tracking-widest uppercase"
+                                disabled={loading}
+                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/20 text-sm tracking-widest uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {mode === 'login' ? 'Enter Dimension' : 'Forge Lineage'}
+                                {loading ? 'Processing...' : (mode === 'login' ? 'Enter Dimension' : 'Forge Lineage')}
                             </button>
                         </form>
 
